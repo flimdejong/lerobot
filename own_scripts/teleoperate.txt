@@ -1,0 +1,62 @@
+# Teleoperation
+python -m lerobot.teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=follower_1 \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=leader_1
+
+lerobot-record \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM1 \
+    --robot.id=follower_1 \
+    --robot.cameras="{ gripper: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}, top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}}" \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM0 \
+    --teleop.id=leader_1 \
+    --display_data=false \
+    --dataset.repo_id=Flimdejong/touch_black_chip \
+    --dataset.num_episodes=30 \
+    --dataset.single_task="Touch the black chip"
+
+lerobot-record \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM1 \
+    --robot.id=follower_1 \
+    --robot.cameras="{ gripper: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}, top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}}" \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM0 \
+    --teleop.id=leader_1 \
+    --display_data=false \
+    --dataset.repo_id=Flimdejong/touch_black_chip \
+    --dataset.num_episodes=20 \
+    --dataset.single_task="Touch the black chip" \
+    --resume=true
+
+# Training
+lerobot-train \
+  --dataset.repo_id=Flimdejong/pick_and_place_red_cube_clean \
+  --batch_size=64 \
+  --steps=20000 \
+  --output_dir=outputs/train/smolvla_pick_place_red_cube_20000 \
+  --policy.type=smolvla \
+  --policy.device=cuda \
+  --policy.repo_id=smolvla_pick_place_red_cube_20000 \
+  --wandb.enable=true
+
+# Inference
+lerobot-record \
+  --robot.type=so101_follower \
+  --robot.port=/dev/ttyACM1 \
+  --robot.id=follower_1 \
+  --robot.cameras="{ gripper: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}, top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}}" \
+  --display_data=false \
+  --dataset.single_task="Grab the red cube and place it in the basket" \
+  --dataset.repo_id=Flimdejong/eval_pick_and_place_red_cube \
+  --dataset.episode_time_s=30 \
+  --dataset.num_episodes=10 \
+  --teleop.type=so101_leader \
+  --teleop.port=/dev/ttyACM0 \
+  --teleop.id=leader_1 \
+  --policy.path=Flimdejong/smolvla_pick_place_red_cube_20000_ckpt
